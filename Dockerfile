@@ -13,7 +13,9 @@ RUN apt-get update && apt-get install -y tzdata
 RUN apt-get install -y gcc
 ENV TZ=Asia/Shanghai
 RUN pip3 install --upgrade pip
-RUN pip3 install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+# 默认使用清华源,GitHub Actions 构建时传入 PIP_INDEX_URL=https://pypi.org/simple
+ARG PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip3 install --no-cache-dir -r requirements.txt -i ${PIP_INDEX_URL}
 #RUN pip3 install setuptools wheel
 #RUN pip3 install uwsgi
 ENV PORT=5000

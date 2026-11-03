@@ -1,7 +1,7 @@
 version: '3'
 services:
   sublink:
-    image: jaaksi/sublink
+    image: yixuexiaoao/sublink
     container_name: sublink
     ports:
       - 8000:5000

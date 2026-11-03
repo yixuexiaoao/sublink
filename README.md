@@ -21,6 +21,30 @@
 
 # 此项目不在维护,新版本：https://github.com/gooaclok819/sublinkX
 
+# 本仓库与原仓库相比新增的功能
+
+本仓库基于原仓库 [jaaksii/sublink](https://github.com/jaaksii/sublink) 2.9-2 版本，新增内容如下：
+
+| 新增功能 | 说明 |
+|----------|------|
+| sing-box 订阅 | 新增生成类型 `singbox`，订阅地址 `/sub/singbox/订阅名(base64)`，输出 sing-box 1.12+ JSON 配置(已用 sing-box 1.14 `check` 校验) |
+| sing-box 规则模板 | 前端「生成类型」选 singbox 后可「编辑规则」，模板为 `app/singbox.json`，分组 `outbounds` 中写 `auto` 会插入本订阅所有节点；保存时校验 JSON 格式 |
+| tuic 协议 | 支持 `tuic://uuid:password@server:port?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=xx&allow_insecure=1#名称`，可输出到 clash(mihomo)/surge(tuic-v5)/sing-box/v2ray |
+| anytls 协议 | 支持 `anytls://password@server:port/?sni=xx&insecure=1&fp=chrome#名称`(未写端口默认 443)，可输出到 clash(mihomo)/surge/sing-box/v2ray |
+| vless grpc | vless 节点 `type=grpc` 时解析 `serviceName`，clash 与 sing-box 均可使用 |
+| Docker 自动构建 | 新增 GitHub Actions，推送到 master 或打 `v*` 标签时自动构建 amd64/arm64 镜像并推送到 Docker Hub |
+
+各输出格式支持的协议：
+
+| 输出格式 | ss | ssr | vmess | vless | trojan | hysteria | hysteria2 | tuic | anytls |
+|----------|----|-----|-------|-------|--------|----------|-----------|------|--------|
+| v2ray(原样输出) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| clash(需 mihomo/Clash Meta 内核) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| surge | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ | ✅ |
+| sing-box(1.12+) | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+注：sing-box 已移除 ssr，ssr 节点在 sing-box 订阅中会被自动跳过；surge 的 anytls 需要较新版本的 surge。
+
 # 2.9-1更新说明：
 
 修复surpe hy2协议
@@ -59,7 +83,7 @@ docker rmi 这里填写IMAGEID
 
 然后拉取镜像输入，默认拉取就是最新版本
 
- ```docker pull jaaksi/sublink```
+ ```docker pull yixuexiaoao/sublink```
 
 ## 启动docker
 
@@ -72,7 +96,7 @@ docker rmi 这里填写IMAGEID
 docker run --name sublink -p 8000:5000 \
 -v $PWD/db:/app/app/db \
 -e PORT=5000 \
--d jaaksi/sublink
+-d yixuexiaoao/sublink
 ```
 
 </details>
@@ -84,7 +108,7 @@ docker run --name sublink -p 8000:5000 \
 docker run --name sublink -p 8000:5000 \
 -v sublink_data:/app/app/db \
 -e PORT=5000 \
--d jaaksi/sublink
+-d yixuexiaoao/sublink
 ```
 查看数据存放目录docker volume inspect sublink_data
 </details>
