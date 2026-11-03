@@ -15,8 +15,15 @@ const isTokenExpired = () => {
     return NowTime > decoded.exp
   }
 }
+const logoutIfUnauthorized = (error) => { // 令牌无效/过期(含密钥变更后的旧令牌,返回422)时退出登录
+  const status = error.response && error.response.status
+  if ([400, 401, 422].includes(status)) {
+    localStorage.removeItem('token')
+    localStorage.removeItem('refresh')
+    location.reload()
+  }
+}
 const SetRefresh = async () => { // 刷新token
-  console.log(baseURL)
   try {
     const response = await axios.post(`${baseURL}/refresh`, {}, {
       headers: {
@@ -28,11 +35,7 @@ const SetRefresh = async () => { // 刷新token
       return response.data
     }
   } catch (error) {
-    if (error.response.status === 400 || error.response.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('refresh')
-      location.reload()
-    }
+    logoutIfUnauthorized(error)
     // console.error('刷新令牌请求失败', error)
     throw error // 抛出异常，由调用方处理
   }
@@ -51,6 +54,7 @@ instance.interceptors.request.use(async function (config) {
       await SetRefresh()
       // 刷新成功后重新发起请求
     } catch (error) {
+      Loading.service().close()
       throw new Error('Token 刷新失败')
     }
   }
@@ -71,11 +75,8 @@ instance.interceptors.response.use(function (response) {
 }, function (error) {
   // 超出 2xx 范围的状态码都会触发该函数。
   // 对响应错误做点什么
-  if (error.response.status === 400 || error.response.status === 401) {
-    localStorage.removeItem('token')
-    localStorage.removeItem('refresh')
-    location.reload()
-  }
+  Loading.service().close()
+  logoutIfUnauthorized(error)
   return Promise.reject(error)
 })
 export default instance

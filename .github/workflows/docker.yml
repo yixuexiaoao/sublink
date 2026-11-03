@@ -6,12 +6,39 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+env:
+  IMAGE: xiaobaiski/sublink
+  SINGBOX_VERSION: 1.14.4
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
-  docker:
+  test:
     runs-on: ubuntu-latest
-    env:
-      # 兼容常见的变量/密钥命名
-      DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME || secrets.DOCKERHUB_USERNAME || secrets.DOCKER_USERNAME }}
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: 下载 sing-box
+        run: |
+          curl -fsSL -o sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VERSION}/sing-box-${SINGBOX_VERSION}-linux-amd64.tar.gz
+          tar -xzf sing-box.tar.gz
+          echo "SINGBOX_BIN=$PWD/sing-box-${SINGBOX_VERSION}-linux-amd64/sing-box" >> $GITHUB_ENV
+
+      - name: 订阅转换测试
+        run: python tests/test_sub.py
+
+  docker:
+    needs: test
+    runs-on: ubuntu-latest
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
@@ -25,14 +52,14 @@ jobs:
       - name: 登录 Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ env.DOCKERHUB_USERNAME }}
+          username: ${{ vars.DOCKERHUB_USERNAME || secrets.DOCKERHUB_USERNAME || secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN || secrets.DOCKERHUB_PASSWORD || secrets.DOCKER_PASSWORD || secrets.DOCKER_TOKEN }}
 
       - name: 生成镜像标签
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.DOCKERHUB_USERNAME }}/sublink
+          images: ${{ env.IMAGE }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=semver,pattern={{version}}
@@ -51,14 +78,18 @@ jobs:
 
       - name: 冒烟测试
         run: |
-          docker run -d --name sublink-test -p 8000:5000 -e PORT=5000 sublink:test
+          docker run -d --name sublink-test -p 8000:5000 sublink:test
           for i in $(seq 1 30); do
             curl -fsS http://127.0.0.1:8000/ > /dev/null && break
             sleep 2
           done
           curl -fsS http://127.0.0.1:8000/ | grep -q '<div id="app">'
           docker exec sublink-test test -f /app/app/db/singbox.json
-          curl -fsS http://127.0.0.1:8000/sub/singbox/dGVzdA== | grep -q '"code"'
+          docker exec sublink-test test -s /app/app/db/jwt_secret
+          for target in clash surge singbox loon quanx general v2ray; do
+            curl -fsS http://127.0.0.1:8000/sub/$target/dGVzdA== | grep -q '订阅不存在\|\\u8ba2\\u9605'
+          done
+          curl -fsS http://127.0.0.1:8000/sub/unknown/dGVzdA== | grep -q '"code":400'
 
       - name: 冒烟测试失败时输出容器日志
         if: failure()

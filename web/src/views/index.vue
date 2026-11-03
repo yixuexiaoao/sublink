@@ -74,9 +74,10 @@
             <div style="display: flex" v-if="optionSub !== ''">
               <el-tag style="margin-right: 10px">生成类型</el-tag>
               <el-select v-model="EDIT.value" placeholder="生成类型" @change="handleUrl('edit')">
-                <el-option v-for="(item, index) in EDIT.option" :key="index" :value="item">
+                <el-option v-for="item in EDIT.option" :key="item.value" :label="item.label" :value="item.value">
                 </el-option>
               </el-select>
+              <el-tag v-if="EDIT.tips[EDIT.value]" style="margin-left: 10px" size="mini" type="info">{{ EDIT.tips[EDIT.value] }}</el-tag>
               <MyClash v-if="EDIT.value === 'clash'" style="margin-left: 10px"></MyClash>
               <MySurge v-if="EDIT.value === 'surge'" style="margin-left: 10px"></MySurge>
               <MySingbox v-if="EDIT.value === 'singbox'" style="margin-left: 10px"></MySingbox>
@@ -161,7 +162,21 @@ export default {
       timer: null,
       EDIT: {
         value: 'clash',
-        option: ['v2ray', 'clash', 'surge', 'singbox']
+        option: [
+          { label: 'v2ray', value: 'v2ray' },
+          { label: 'clash', value: 'clash' },
+          { label: 'surge', value: 'surge' },
+          { label: 'sing-box', value: 'singbox' },
+          { label: 'Loon', value: 'loon' },
+          { label: 'Quantumult X', value: 'quanx' },
+          { label: '通用格式(明文链接)', value: 'general' }
+        ],
+        tips: {
+          loon: '节点订阅,适配:ss ssr vmess vless trojan hy2',
+          quanx: '节点订阅(server_remote),适配:ss ssr vmess vless trojan',
+          general: '一行一个节点链接,远程订阅已展开',
+          v2ray: '节点链接base64编码'
+        }
       },
       isQrShow: false,
       QrTest: '',
