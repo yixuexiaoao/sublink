@@ -761,10 +761,10 @@ def quanx_encode(links):  # Quantumult X 节点订阅(作为 server_remote 引�
     return '\n'.join(line for line in lines if line) + '\n'
 
 
-def general_encode(links):  # 通用格式: 明文节点链接,一行一个(远程订阅已展开)
-    return '\n'.join(links) + '\n'
 def v2ray_encode(links):  # v2ray: 节点链接 base64
     return base64.b64encode('\n'.join(links).encode('utf-8')).decode('utf-8')
+def general_encode(links):  # 通用格式: 节点链接一行一个(远程订阅已展开),整体 base64 编码,绝大多数客户端可直接导入
+    return v2ray_encode(links)
 
 ENCODERS = {  # 订阅类型: (编码函数, mimetype, 文件后缀)
     'clash': (clash_encode, 'text/plain', ''),

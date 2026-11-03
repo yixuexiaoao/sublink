@@ -33,7 +33,7 @@
 | sing-box 规则模板 | 生成类型选 singbox 后可「编辑规则」，模板为 `app/singbox.json`，分组 `outbounds` 中写 `auto` 插入本订阅所有节点；保存时校验 JSON |
 | Loon 订阅 | 生成类型 `Loon`，地址 `/sub/loon/订阅名(base64)`，输出 Loon 节点格式，在 Loon 中作为「订阅节点」添加 |
 | Quantumult X 订阅 | 生成类型 `Quantumult X`，地址 `/sub/quanx/订阅名(base64)`，输出 QX 节点格式，在 `[server_remote]` 中引用 |
-| 通用格式 | 生成类型 `通用格式`，地址 `/sub/general/订阅名(base64)`，明文节点链接一行一个(远程订阅已展开)，适合 NekoBox、v2rayN 等直接导入 |
+| 通用格式 | 生成类型 `通用格式`，地址 `/sub/general/订阅名(base64)`，节点链接(远程订阅已展开)经 base64 编码，适合 v2rayN、NekoBox、小火箭等直接导入 |
 | tuic 协议 | `tuic://uuid:password@server:port?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=xx&allow_insecure=1#名称` |
 | anytls 协议 | `anytls://password@server:port/?sni=xx&insecure=1&fp=chrome#名称`(未写端口默认 443) |
 | vless/vmess/trojan grpc | 解析 grpc `serviceName`，clash 与 sing-box 可用 |
@@ -43,7 +43,7 @@
 
 | 订阅类型 | ss | ssr | vmess | vless | trojan | hysteria | hysteria2 | tuic | anytls |
 |----------|----|-----|-------|-------|--------|----------|-----------|------|--------|
-| v2ray(base64) / 通用格式(明文) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| v2ray / 通用格式(base64) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | clash(需 mihomo/Clash Meta 内核) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | sing-box(1.12+) | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | surge | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ | ✅ |
@@ -89,11 +89,9 @@ pip install -r requirements.txt
 python tests/test_sub.py
 ```
 
-# 2.9-1更新说明：
+# 版本
 
-修复surpe hy2协议
-新增删除登录记录命令
-新增query中cert证书自定义
+当前版本 **3.0**，各版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
 # 功能说明：
 

@@ -121,7 +121,7 @@ def main():
     assert any(l.startswith('trojan=trojan2.example.com:443') and 'over-tls=true' in l for l in quanx)
     assert any(l.startswith('vless=vless.example.com:443') and 'reality-base64-pubkey=' in l for l in quanx)
 
-    general = out['general'].splitlines()
+    general = base64.b64decode(out['general']).decode().splitlines()  # 通用格式为 base64
     assert 'https://example.com/sub' not in general and any(l.startswith('tuic://') for l in general)
     assert base64.b64decode(out['v2ray']).decode().splitlines() == general
 

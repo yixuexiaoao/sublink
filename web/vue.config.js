@@ -1,4 +1,8 @@
 const { defineConfig } = require('@vue/cli-service')
+const fs = require('fs')
+const path = require('path')
+// 版本号统一读取仓库根目录 VERSION 文件
+process.env.VUE_APP_VER = fs.readFileSync(path.resolve(__dirname, '../VERSION'), 'utf-8').trim()
 module.exports = defineConfig({
   transpileDependencies: true,
   devServer: {

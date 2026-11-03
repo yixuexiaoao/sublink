@@ -169,12 +169,12 @@ export default {
           { label: 'sing-box', value: 'singbox' },
           { label: 'Loon', value: 'loon' },
           { label: 'Quantumult X', value: 'quanx' },
-          { label: '通用格式(明文链接)', value: 'general' }
+          { label: '通用格式', value: 'general' }
         ],
         tips: {
           loon: '节点订阅,适配:ss ssr vmess vless trojan hy2',
           quanx: '节点订阅(server_remote),适配:ss ssr vmess vless trojan',
-          general: '一行一个节点链接,远程订阅已展开',
+          general: '节点链接base64编码,远程订阅已展开',
           v2ray: '节点链接base64编码'
         }
       },
