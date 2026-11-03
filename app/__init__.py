@@ -7,6 +7,7 @@ def create_app():
     app = Flask(__name__)
     app.register_blueprint(blueprint=blue)
     path = os.path.dirname(os.path.abspath(__file__))
+    os.makedirs(path + '/db', exist_ok=True)  # 未挂载数据目录时自动创建,否则sqlite无法打开数据库
     db_url = 'sqlite:///' + path + '/db/sub.db'
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

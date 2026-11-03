@@ -59,8 +59,10 @@ jobs:
           curl -fsS http://127.0.0.1:8000/ | grep -q '<div id="app">'
           docker exec sublink-test test -f /app/app/db/singbox.json
           curl -fsS http://127.0.0.1:8000/sub/singbox/dGVzdA== | grep -q '"code"'
-          docker logs sublink-test
-          docker rm -f sublink-test
+
+      - name: 冒烟测试失败时输出容器日志
+        if: failure()
+        run: docker logs sublink-test || true
 
       - name: 构建并推送多架构镜像
         uses: docker/build-push-action@v6
