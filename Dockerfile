@@ -1,4 +1,4 @@
-FROM python:3.8.13-slim
+FROM python:3.8.20-slim-bookworm
 WORKDIR /app
 COPY run.py .
 COPY app app
