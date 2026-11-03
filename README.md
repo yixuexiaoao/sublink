@@ -35,7 +35,11 @@
 
 解决安全问题预防被偷节点,集成前后端
 
-目前支持v2ray|clash|surge
+目前支持v2ray|clash|surge|sing-box
+
+节点协议支持:ss|ssr|vmess|vless|trojan|hysteria|hysteria2|tuic|anytls
+
+sing-box订阅地址格式为 /sub/singbox/订阅名(base64)，需要sing-box 1.12及以上版本(anytls出站需要1.12+)
 
 v2ray格式通用的软件已测有下:v2rayn 小火箭等，还有一些没用过不知名
 

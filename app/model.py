@@ -46,6 +46,7 @@ def create_db():
             shutil.copy(path + FilePath, db_path)
     init_db('/clash.yaml', '/db/clash.yaml')
     init_db('/surge.conf', '/db/surge.conf')
+    init_db('/singbox.json', '/db/singbox.json')
 def init_user_pass():
     def handle_error(e):
         db.session.rollback()

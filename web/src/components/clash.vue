@@ -1,7 +1,7 @@
 <template>
 <div>
   <el-button @click="clash_config('edit')"> 编辑规则</el-button>
-  <el-tag style="margin-left: 10px" size="mini" type="info">适配:ss ssr vmess vless trojan hy hy2</el-tag>
+  <el-tag style="margin-left: 10px" size="mini" type="info">适配:ss ssr vmess vless trojan hy hy2 tuic anytls</el-tag>
   <el-dialog
     title="clash规则编辑(所有订阅共用一个规则)"
     :visible.sync="dialogVisible"

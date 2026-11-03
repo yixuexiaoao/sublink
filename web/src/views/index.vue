@@ -79,6 +79,7 @@
               </el-select>
               <MyClash v-if="EDIT.value === 'clash'" style="margin-left: 10px"></MyClash>
               <MySurge v-if="EDIT.value === 'surge'" style="margin-left: 10px"></MySurge>
+              <MySingbox v-if="EDIT.value === 'singbox'" style="margin-left: 10px"></MySingbox>
             </div>
             <div style="margin-bottom: 10px"></div>
             <div v-if="optionSub !== ''">
@@ -136,6 +137,7 @@ import { SetConfig, GetConfig } from '@/api/config'
 import USER from '@/components/user'
 import MyClash from '@/components/clash'
 import MySurge from '@/components/surge'
+import MySingbox from '@/components/singbox'
 import MyAddress from '@/components/address'
 import Nodelist from '@/components/nodelist'
 import Rename from '@/components/rename'
@@ -159,7 +161,7 @@ export default {
       timer: null,
       EDIT: {
         value: 'clash',
-        option: ['v2ray', 'clash', 'surge']
+        option: ['v2ray', 'clash', 'surge', 'singbox']
       },
       isQrShow: false,
       QrTest: '',
@@ -368,6 +370,7 @@ export default {
     USER,
     MyClash,
     MySurge,
+    MySingbox,
     MyAddress,
     Nodelist,
     MyParser,

@@ -7,7 +7,7 @@ import base64,yaml,urllib.parse,os,re
 from flask_jwt_extended import jwt_required,get_jwt_identity,create_access_token,create_refresh_token
 blue = Blueprint('blue',__name__)
 path = os.path.dirname(os.path.abspath(__file__))
-subname_list =['vless','vmess','ss','ssr','trojan','hysteria','hy2','hysteria2','http','https']
+subname_list =['vless','vmess','ss','ssr','trojan','hysteria','hy2','hysteria2','tuic','anytls','http','https']
 def get_country_emoji(hostname):
     import socket
     # print(hostname)
@@ -148,6 +148,10 @@ class NodeParse():
             host = query.get('host')
             if host:
                 proxy['ws-opts']['headers'] = {'Host': host}
+        if query.get('type') == 'grpc':
+            proxy['grpc-opts'] = {
+                'grpc-service-name': query.get('serviceName', '')
+            }
         if query.get('cert'):
             if query.get('cert').lower() == 'true':
                 proxy['skip-cert-verify'] = True
@@ -425,6 +429,89 @@ class NodeParse():
             else:
                 proxy['skip-cert-verify'] = False
         return proxy
+    def tuic(self):
+        # tuic://uuid:password@server:port?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=xx&allow_insecure=1#name
+        parse = urllib.parse.urlparse(self.proxy_test)
+        info = parse.netloc + parse.path if parse.path != '/' else parse.netloc
+        urlpath = decode_base64_if(info)  # uuid:password@服务器:端口
+        name = urllib.parse.unquote(parse.fragment)
+        query = urllib.parse.parse_qs(parse.query)
+        for key, value in query.items():
+            query[key] = value[0]
+        userinfo = urlpath.rsplit('@', 1)[0]
+        server_port = urlpath.rsplit('@', 1)[1]
+        uuid = urllib.parse.unquote(userinfo.split(':', 1)[0])
+        password = urllib.parse.unquote(userinfo.split(':', 1)[1]) if ':' in userinfo else ''
+        server = if_ipv6_address(server_port.rsplit(':', 1)[0])
+        port = int(server_port.rsplit(':', 1)[1])
+        if Emoji:
+            name = get_country_emoji(server) + name
+        proxy = {
+            'name': name,
+            'type': 'tuic',
+            'server': server,
+            'port': port,
+            'uuid': uuid,
+            'password': password,
+            'alpn': ['h3'],
+            'congestion-controller': query.get('congestion_control', 'bbr'),
+            'udp-relay-mode': query.get('udp_relay_mode', 'native'),
+            'reduce-rtt': True,
+            'udp': Udp,
+            'skip-cert-verify': SkipCert
+        }
+        if query.get('alpn'):
+            proxy['alpn'] = query.get('alpn').split(',')
+        if query.get('sni'):
+            proxy['sni'] = query.get('sni')
+        if query.get('disable_sni') in ('1', 'true'):
+            proxy['disable-sni'] = True
+        insecure = query.get('allow_insecure') or query.get('allowInsecure') or query.get('insecure')
+        if insecure in ('1', 'true'):
+            proxy['skip-cert-verify'] = True
+        if query.get('cert'):
+            if query.get('cert').lower() == 'true':
+                proxy['skip-cert-verify'] = True
+            else:
+                proxy['skip-cert-verify'] = False
+        return proxy
+    def anytls(self):
+        # anytls://password@server:port/?sni=xx&insecure=1&fp=chrome#name
+        parse = urllib.parse.urlparse(self.proxy_test)
+        urlpath = parse.netloc  # 密码@服务器:端口
+        name = urllib.parse.unquote(parse.fragment)
+        query = urllib.parse.parse_qs(parse.query)
+        for key, value in query.items():
+            query[key] = value[0]
+        password = urllib.parse.unquote(urlpath.rsplit('@', 1)[0])
+        server = parse.hostname
+        port = parse.port or 443  # 未填写端口默认443
+        if Emoji:
+            name = get_country_emoji(server) + name
+        proxy = {
+            'name': name,
+            'type': 'anytls',
+            'server': server,
+            'port': port,
+            'password': password,
+            'client-fingerprint': 'chrome',
+            'udp': Udp,
+            'skip-cert-verify': SkipCert
+        }
+        if query.get('fp'):
+            proxy['client-fingerprint'] = query.get('fp')
+        if query.get('sni'):
+            proxy['sni'] = query.get('sni')
+        if query.get('alpn'):
+            proxy['alpn'] = query.get('alpn').split(',')
+        if query.get('insecure') in ('1', 'true'):
+            proxy['skip-cert-verify'] = True
+        if query.get('cert'):
+            if query.get('cert').lower() == 'true':
+                proxy['skip-cert-verify'] = True
+            else:
+                proxy['skip-cert-verify'] = False
+        return proxy
 def clash_encode(subs): #clash编码
     # 初始化 Clash 配置
     clash_config = {
@@ -478,6 +565,18 @@ def clash_encode(subs): #clash编码
                 node_parse = NodeParse()  # 创建 NodeParse 实例
                 node_parse.proxy_test = proxy_test
                 proxy = node_parse.hysteria2()
+                clash_config['proxies'].append(proxy)
+                proxy_name_list.append(proxy['name'])
+            if proxy_type == 'tuic':
+                node_parse = NodeParse()  # 创建 NodeParse 实例
+                node_parse.proxy_test = proxy_test
+                proxy = node_parse.tuic()
+                clash_config['proxies'].append(proxy)
+                proxy_name_list.append(proxy['name'])
+            if proxy_type == 'anytls':
+                node_parse = NodeParse()  # 创建 NodeParse 实例
+                node_parse.proxy_test = proxy_test
+                proxy = node_parse.anytls()
                 clash_config['proxies'].append(proxy)
                 proxy_name_list.append(proxy['name'])
 
@@ -563,6 +662,26 @@ def surge_encode(subs):
                     proxys += f",sni={proxy['sni']}"
                 surge_config['proxy'].append(proxys)
                 proxy_name_list.append(proxy['name'])
+            if proxy_type == 'tuic':
+                node_parse = NodeParse()  # 创建 NodeParse 实例
+                node_parse.proxy_test = proxy_test
+                proxy = node_parse.tuic()
+                proxys = f"{proxy.get('name')} = tuic-v5,{proxy.get('server')},{proxy.get('port')},password={proxy.get('password')}," \
+                         f"uuid={proxy.get('uuid')},alpn={proxy.get('alpn')[0]},skip-cert-verify={proxy.get('skip-cert-verify')},udp-relay={proxy.get('udp')}"
+                if proxy.get('sni'):
+                    proxys += f",sni={proxy['sni']}"
+                surge_config['proxy'].append(proxys)
+                proxy_name_list.append(proxy['name'])
+            if proxy_type == 'anytls':
+                node_parse = NodeParse()  # 创建 NodeParse 实例
+                node_parse.proxy_test = proxy_test
+                proxy = node_parse.anytls()
+                proxys = f"{proxy.get('name')} = anytls,{proxy.get('server')},{proxy.get('port')},password={proxy.get('password')}," \
+                         f"skip-cert-verify={proxy.get('skip-cert-verify')},udp-relay={proxy.get('udp')}"
+                if proxy.get('sni'):
+                    proxys += f",sni={proxy['sni']}"
+                surge_config['proxy'].append(proxys)
+                proxy_name_list.append(proxy['name'])
         if proxy_type == 'http' or proxy_type == 'https':
             url = proxy_test
             response = requests.get(url)
@@ -595,6 +714,161 @@ def surge_encode(subs):
     config_text = re.sub('auto', autos, config_text)
 
     return config_text
+def parse_node(proxy_type, proxy_test): # 节点链接解析成clash格式字典,不支持的返回None
+    node_parse = NodeParse()
+    node_parse.proxy_test = proxy_test
+    parsers = {
+        'vless': node_parse.vless,
+        'vmess': node_parse.vmess,
+        'ss': node_parse.ss,
+        'ssr': node_parse.ssr,
+        'trojan': node_parse.trojan,
+        'hysteria': node_parse.hysteria,
+        'hy2': node_parse.hysteria2,
+        'hysteria2': node_parse.hysteria2,
+        'tuic': node_parse.tuic,
+        'anytls': node_parse.anytls,
+    }
+    parser = parsers.get(proxy_type)
+    return parser() if parser else None
+def singbox_outbound(proxy): # clash格式字典转sing-box出站
+    def tls(utls=True):
+        conf = {
+            'enabled': True,
+            'server_name': proxy.get('sni') or proxy.get('servername') or proxy.get('server'),
+            'insecure': bool(proxy.get('skip-cert-verify'))
+        }
+        if proxy.get('alpn'):
+            conf['alpn'] = proxy.get('alpn')
+        if utls and proxy.get('client-fingerprint'):
+            conf['utls'] = {'enabled': True, 'fingerprint': proxy.get('client-fingerprint')}
+        return conf
+    def transport():
+        if proxy.get('network') == 'ws':
+            ws_opts = proxy.get('ws-opts') or {}
+            conf = {'type': 'ws', 'path': ws_opts.get('path') or '/'}
+            if ws_opts.get('headers'):
+                conf['headers'] = ws_opts.get('headers')
+            return conf
+        if proxy.get('network') == 'grpc':
+            grpc_opts = proxy.get('grpc-opts') or {}
+            return {'type': 'grpc', 'service_name': grpc_opts.get('grpc-service-name', '')}
+        return None
+    def mbps(value, default):
+        match = re.search(r'\d+', str(value)) if value else None
+        return int(match.group()) if match else default
+
+    proxy_type = proxy.get('type')
+    outbound = {
+        'tag': proxy.get('name'),
+        'server': proxy.get('server'),
+        'server_port': int(proxy.get('port'))
+    }
+    if proxy_type == 'ss':
+        outbound['type'] = 'shadowsocks'
+        outbound['method'] = proxy.get('cipher')
+        outbound['password'] = proxy.get('password')
+    elif proxy_type == 'vmess':
+        outbound['type'] = 'vmess'
+        outbound['uuid'] = proxy.get('uuid')
+        outbound['security'] = proxy.get('cipher') or 'auto'
+        outbound['alter_id'] = int(proxy.get('alterId') or 0)
+        if proxy.get('tls'):
+            outbound['tls'] = tls()
+            ws_host = ((proxy.get('ws-opts') or {}).get('headers') or {}).get('Host')
+            if ws_host and not proxy.get('servername'):
+                outbound['tls']['server_name'] = ws_host
+    elif proxy_type == 'vless':
+        outbound['type'] = 'vless'
+        outbound['uuid'] = proxy.get('uuid')
+        if proxy.get('flow'):
+            outbound['flow'] = proxy.get('flow')
+        if proxy.get('tls'):
+            outbound['tls'] = tls()
+            reality = proxy.get('reality-opts')
+            if reality:
+                outbound['tls']['reality'] = {'enabled': True, 'public_key': reality.get('public-key')}
+                if reality.get('short-id'):
+                    outbound['tls']['reality']['short_id'] = reality.get('short-id')
+                outbound['tls']['utls'] = {'enabled': True, 'fingerprint': proxy.get('client-fingerprint') or 'chrome'}
+    elif proxy_type == 'trojan':
+        outbound['type'] = 'trojan'
+        outbound['password'] = proxy.get('password')
+        outbound['tls'] = tls()
+    elif proxy_type == 'hysteria':
+        outbound['type'] = 'hysteria'
+        outbound['up_mbps'] = mbps(proxy.get('up'), 50)
+        outbound['down_mbps'] = mbps(proxy.get('down'), 100)
+        if proxy.get('auth_str'):
+            outbound['auth_str'] = proxy.get('auth_str')
+        outbound['tls'] = tls(utls=False)
+    elif proxy_type == 'hysteria2':
+        outbound['type'] = 'hysteria2'
+        outbound['password'] = proxy.get('password')
+        if proxy.get('obfs'):
+            outbound['obfs'] = {'type': proxy.get('obfs'), 'password': proxy.get('obfs-password', '')}
+        outbound['tls'] = tls(utls=False)
+    elif proxy_type == 'tuic':
+        outbound['type'] = 'tuic'
+        outbound['uuid'] = proxy.get('uuid')
+        outbound['password'] = proxy.get('password')
+        outbound['congestion_control'] = proxy.get('congestion-controller', 'bbr')
+        outbound['udp_relay_mode'] = proxy.get('udp-relay-mode', 'native')
+        outbound['zero_rtt_handshake'] = bool(proxy.get('reduce-rtt'))
+        outbound['tls'] = tls(utls=False)
+        if proxy.get('disable-sni'):
+            outbound['tls']['disable_sni'] = True
+    elif proxy_type == 'anytls':
+        outbound['type'] = 'anytls'
+        outbound['password'] = proxy.get('password')
+        outbound['tls'] = tls()
+    else:
+        return None  # sing-box 不支持 ssr 等协议
+    if proxy_type in ('vmess', 'vless', 'trojan'):
+        conf = transport()
+        if conf:
+            outbound['transport'] = conf
+    if proxy_type in ('ss', 'vmess', 'vless', 'trojan') and not proxy.get('udp'):
+        outbound['network'] = 'tcp'
+    return outbound
+def singbox_encode(subs): # sing-box编码
+    outbounds = []
+    proxy_name_list = []
+    def singbox(proxy_type, proxy_test):
+        proxy = parse_node(proxy_type, proxy_test)
+        outbound = singbox_outbound(proxy) if proxy else None
+        if not outbound:
+            return
+        # sing-box 要求 tag 唯一
+        tag = outbound['tag'] or outbound['server']
+        index = 1
+        while tag in proxy_name_list:
+            index += 1
+            tag = f"{outbound['tag']} {index}"
+        outbound['tag'] = tag
+        outbounds.append(outbound)
+        proxy_name_list.append(tag)
+    for sub in subs:
+        proxy_type = sub.node.split('://')[0]  # 节点类型
+        proxy_test = sub.node  # 节点信息
+        if proxy_type == 'http' or proxy_type == 'https':
+            response = requests.get(proxy_test)
+            text = decode_base64_if(response.text)
+            for sub2 in text.split("\n"):
+                sub2 = sub2.strip()
+                if sub2:
+                    singbox(sub2.split("://")[0], sub2)
+        else:
+            singbox(proxy_type, proxy_test)
+    with open(path + '/db/singbox.json', 'r', encoding='utf-8') as file:
+        data = json.load(file)
+    groups = data.get('outbounds') or []
+    for group in groups:
+        if 'auto' in (group.get('outbounds') or []):  # auto替换为本订阅所有节点
+            index = group['outbounds'].index('auto')
+            group['outbounds'][index:index + 1] = proxy_name_list
+    data['outbounds'] = groups + outbounds
+    return json.dumps(data, ensure_ascii=False, indent=2)
 @blue.route('/sub/<string:target>/<path:name>',methods=['GET']) #订阅地址
 def get_sub_url(target,name):
     if request.method == 'GET':
@@ -639,6 +913,12 @@ def get_sub_url(target,name):
                 send_file(BytesIO(data.encode('utf-8')), mimetype='text/plain', as_attachment=False,
                           download_name=name))
             # response.headers['subscription-userinfo'] = 'remarks=22333829939200;'
+            return response
+        if target == 'singbox' or target == 'sing-box':
+            data = singbox_encode(subs)
+            response = make_response(
+                send_file(BytesIO(data.encode('utf-8')), mimetype='application/json', as_attachment=False,
+                          download_name=f'{name}.json'))
             return response
 @blue.route('/clash_config',methods=['POST']) #clash配置修改
 @jwt_required()
@@ -687,6 +967,38 @@ def surge_config():
                     'msg': '不能为空'
                 })
             with open(path + '/db/surge.conf', 'w') as file:
+                file.write(text)
+                return jsonify({
+                    'code':200,
+                    'msg':'保存成功'
+                })
+@blue.route('/singbox_config',methods=['POST']) #sing-box配置修改
+@jwt_required()
+def singbox_config():
+    if request.method == 'POST':
+        data = request.get_json()
+        index = data.get('index')
+        if index == 'read':
+            with open(path + '/db/singbox.json', 'r', encoding='utf-8') as file:
+                return jsonify({
+                    'code':200,
+                    'msg':file.read()
+                })
+        if index == 'save':
+            text = data.get('text')
+            if text == '':
+                return jsonify({
+                    'code': 400,
+                    'msg': '不能为空'
+                })
+            try:
+                json.loads(text)
+            except ValueError as e:
+                return jsonify({
+                    'code': 400,
+                    'msg': 'JSON格式错误:' + str(e)
+                })
+            with open(path + '/db/singbox.json', 'w', encoding='utf-8') as file:
                 file.write(text)
                 return jsonify({
                     'code':200,
