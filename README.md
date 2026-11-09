@@ -91,7 +91,7 @@ python tests/test_sub.py
 
 # 版本
 
-当前版本 **3.0**，各版本变更见 [CHANGELOG.md](CHANGELOG.md)。
+当前版本 **3.0.1**，各版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
 # 功能说明：
 
