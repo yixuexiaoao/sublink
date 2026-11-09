@@ -2,6 +2,18 @@
 
 版本号记录在仓库根目录 `VERSION` 文件中（前端页面标题、Docker 镜像标签均读取此文件）。每次调整都需要更新 `VERSION` 并在本文件顶部新增对应版本的记录，CI 会检查两者是否一致。
 
+## [3.0.2] - 2026-11-09
+
+### 修复
+- 发布工作流读不到 Docker Hub 凭据（`Username required`）：增加读取 `DOCKER_HUB_USERNAME`，令牌同时支持 `DOCKER_HUB_TOKEN`、`DOCKER_HUB_PASSWORD`、`DOCKER_HUB_ACCESS_TOKEN`
+
+### 测试与验证
+- `python tests/test_sub.py` 全部通过；`vue-cli-service build` 成功；工作流 YAML 可解析
+- 未进行 GUI 验证：只改了发布工作流和版本号，应用功能代码没有变化
+
+### 说明
+- 3.0.1 因上述问题未发布 Docker 镜像，其内容包含在本版本中
+
 ## [3.0.1] - 2026-11-09
 
 ### 新增
